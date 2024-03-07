@@ -310,9 +310,17 @@ func (e *ControlPlaneStateExporter) archive(ctx context.Context, fs afero.Afero,
 
 	// Walk the directory and add each file to the tar archive
 	err = filepath.Walk(dir, func(file string, fi os.FileInfo, err error) error {
-		// Return any errors encountered while walking the directory
+		if ctx.Done() != nil {
+			return ctx.Err()
+		}
+
 		if err != nil {
 			return err
+		}
+
+		// Skip if it is a directory
+		if fi.IsDir() {
+			return nil
 		}
 
 		// Open the file
