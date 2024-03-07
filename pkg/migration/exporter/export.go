@@ -16,11 +16,8 @@ package exporter
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	xpmeta "github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/mholt/archiver/v4"
 	"github.com/pterm/pterm"
 	"github.com/spf13/afero"
@@ -34,9 +31,11 @@ import (
 	"k8s.io/client-go/dynamic"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	"github.com/upbound/up/internal/migration/category"
-	"github.com/upbound/up/internal/migration/meta/v1alpha1"
-	"github.com/upbound/up/internal/upterm"
+	"github.com/upbound/up/pkg/migration/category"
+	"github.com/upbound/up/pkg/migration/meta/v1alpha1"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	xpmeta "github.com/crossplane/crossplane-runtime/pkg/meta"
 )
 
 // Options for the exporter.
@@ -84,10 +83,6 @@ func NewControlPlaneStateExporter(crdClient apiextensionsclientset.Interface, dy
 
 // Export exports the state of the control plane.
 func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolint:gocyclo // This is the high level export command, so it's expected to be a bit complex.
-	pterm.EnableStyling()
-	upterm.DefaultObjPrinter.Pretty = true
-
-	pterm.Println("Exporting control plane state...")
 
 	// TODO(turkenh): Check if we can use `afero.NewMemMapFs()` just like import and avoid the need for a temporary directory.
 	fs := afero.Afero{Fs: afero.NewOsFs()}
@@ -103,28 +98,21 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 	}()
 
 	if e.options.PauseBeforeExport {
-		pauseMsg := "Pausing all managed resources before export... "
-		s, _ := upterm.CheckmarkSuccessSpinner.Start(pauseMsg)
 		cm := category.NewAPICategoryModifier(e.dynamicClient, e.discoveryClient)
 
 		// Modify all managed resources to add the "crossplane.io/paused: true" annotation.
-		count, err := cm.ModifyResources(ctx, "managed", func(u *unstructured.Unstructured) error {
+		_, err := cm.ModifyResources(ctx, "managed", func(u *unstructured.Unstructured) error {
 			xpmeta.AddAnnotations(u, map[string]string{"crossplane.io/paused": "true"})
 			return nil
 		})
 		if err != nil {
-			s.Fail(pauseMsg + "Failed!")
 			return errors.Wrap(err, "cannot pause managed resources")
 		}
-		s.Success(pauseMsg + fmt.Sprintf("%d resources paused! ⏸️", count))
 	}
 
 	// Scan the control plane for types to export.
-	scanMsg := "Scanning control plane for types to export... "
-	s, _ := upterm.CheckmarkSuccessSpinner.Start(scanMsg)
 	crdList, err := fetchAllCRDs(ctx, e.crdClient)
 	if err != nil {
-		s.Fail(scanMsg + "Failed!")
 		return errors.Wrap(err, "cannot fetch CRDs")
 	}
 	exportList := make([]apiextensionsv1.CustomResourceDefinition, 0, len(crdList))
@@ -140,21 +128,15 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 		}
 		exportList = append(exportList, crd)
 	}
-	s.Success(scanMsg + fmt.Sprintf("%d types found! 👀", len(exportList)))
 	//////////////////////
 
 	// Export Crossplane resources.
 	crCounts := make(map[string]int, len(exportList))
-	exportCRsMsg := "Exporting Crossplane resources... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(exportCRsMsg + fmt.Sprintf("0 / %d", len(exportList)))
-	for i, crd := range exportList {
+	for _, crd := range exportList {
 		gvr, err := e.customResourceGVR(crd)
 		if err != nil {
-			s.Fail(exportCRsMsg + "Failed!")
 			return errors.Wrapf(err, "cannot get GVR for %q", crd.GetName())
 		}
-
-		s.UpdateText(fmt.Sprintf("(%d / %d) Exporting %s...", i, len(exportList), gvr.GroupResource()))
 
 		sub := false
 		for _, vr := range crd.Spec.Versions {
@@ -176,7 +158,6 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 		// well-known directory structure.
 		count, err := exporter.ExportResources(ctx, gvr)
 		if err != nil {
-			s.Fail(exportCRsMsg + "Failed!")
 			return errors.Wrapf(err, "cannot export resources for %q", crd.GetName())
 		}
 		crCounts[gvr.GroupResource().String()] = count
@@ -186,12 +167,9 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 	for _, count := range crCounts {
 		total += count
 	}
-	s.Success(exportCRsMsg + fmt.Sprintf("%d resources exported! 📤", total))
 	//////////////////////
 
 	// Export native resources.
-	exportNativeMsg := "Exporting native resources... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(exportNativeMsg + fmt.Sprintf("0 / %d", len(e.options.IncludeExtraResources)))
 	nativeCounts := make(map[string]int, len(e.options.IncludeExtraResources))
 
 	// In addition to the Crossplane resources, we also need to export some native resources. These are
@@ -208,7 +186,6 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 
 		count, err := exporter.ExportResources(ctx, gvr)
 		if err != nil {
-			s.Fail(exportNativeMsg + "Failed!")
 			return errors.Wrapf(err, "cannot export resources for %q", r)
 		}
 		nativeCounts[gvr.Resource] = count
@@ -217,7 +194,6 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 	for _, count := range nativeCounts {
 		total += count
 	}
-	s.Success(exportNativeMsg + fmt.Sprintf("%d resources exported! 📤", total))
 	//////////////////////
 
 	// Export a top level metadata file. This file contains details like when the export was done,
@@ -231,13 +207,9 @@ func (e *ControlPlaneStateExporter) Export(ctx context.Context) error { // nolin
 	//////////////////////
 
 	// Archive the exported state.
-	archiveMsg := "Archiving exported state... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(archiveMsg)
 	if err = e.archive(ctx, fs, tmpDir); err != nil {
-		s.Fail(archiveMsg + "Failed!")
 		return errors.Wrap(err, "cannot archive exported state")
 	}
-	s.Success(archiveMsg + fmt.Sprintf("archived to %q! 📦", e.options.OutputArchive))
 	//////////////////////
 
 	pterm.Println("\nSuccessfully exported control plane state!")

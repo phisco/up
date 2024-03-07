@@ -20,8 +20,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/pkg/migration"
+	"github.com/upbound/up/pkg/migration/importer"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
@@ -29,9 +30,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+
 	"github.com/upbound/up/internal/input"
-	"github.com/upbound/up/internal/migration"
-	"github.com/upbound/up/internal/migration/importer"
 )
 
 type importCmd struct {

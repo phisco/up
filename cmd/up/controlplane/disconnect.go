@@ -21,11 +21,11 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 const (

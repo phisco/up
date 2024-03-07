@@ -27,7 +27,6 @@ require (
 	github.com/google/go-containerregistry v0.16.1
 	github.com/google/uuid v1.3.0
 	github.com/goreleaser/nfpm/v2 v2.5.1
-	github.com/mholt/archiver/v4 v4.0.0-alpha.8
 	github.com/navidys/tvxwidgets v0.6.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/posener/complete v1.2.3
@@ -39,6 +38,7 @@ require (
 	github.com/spf13/afero v1.10.0
 	github.com/spf13/cobra v1.7.0
 	github.com/upbound/up-sdk-go v0.1.1-0.20240122203953-2d00664aab8e
+	github.com/upbound/up/pkg/migration v0.0.0-00010101000000-000000000000
 	github.com/willabides/kongplete v0.3.0
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	golang.org/x/sync v0.6.0
@@ -62,6 +62,7 @@ require (
 	github.com/charmbracelet/bubbletea v0.25.0 // indirect
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
+	github.com/mholt/archiver/v4 v4.0.0-alpha.8 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
 
@@ -225,7 +226,6 @@ require (
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
@@ -291,3 +291,5 @@ replace (
 	github.com/docker/cli => github.com/docker/cli v20.10.27+incompatible
 	github.com/docker/docker => github.com/docker/docker v20.10.27+incompatible
 )
+
+replace github.com/upbound/up/pkg/migration => ./pkg/migration

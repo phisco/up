@@ -18,11 +18,12 @@ import (
 	"context"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	"github.com/upbound/up/internal/migration/meta/v1alpha1"
+	"github.com/upbound/up/pkg/migration/meta/v1alpha1"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 )
 
 func CollectInfo(ctx context.Context, appsClient appsv1.DeploymentsGetter) (*v1alpha1.CrossplaneInfo, error) {

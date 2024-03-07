@@ -20,19 +20,20 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+
 	"github.com/upbound/up/internal/kube"
 	"github.com/upbound/up/internal/resources"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 	"github.com/upbound/up/internal/xpkg"
 )
 

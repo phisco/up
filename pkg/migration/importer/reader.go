@@ -20,12 +20,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/spf13/afero"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
-	"github.com/upbound/up/internal/migration/meta/v1alpha1"
+	"github.com/upbound/up/pkg/migration/meta/v1alpha1"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 )
 
 const yamlPathPattern = `^(cluster|namespaces\/[a-z0-9]([-a-z0-9]*[a-z0-9])?)\/[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*\.yaml$`

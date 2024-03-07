@@ -19,6 +19,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"k8s.io/client-go/dynamic"
 
 	"github.com/upbound/up-sdk-go/service/configurations"
@@ -27,7 +28,6 @@ import (
 	"github.com/upbound/up/internal/controlplane/cloud"
 	"github.com/upbound/up/internal/controlplane/space"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 type ctpLister interface {

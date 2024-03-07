@@ -20,11 +20,10 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
-
 	"github.com/upbound/up-sdk-go/service/organizations"
+	"github.com/upbound/up/internal/upterm"
 
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 // AfterApply sets default values in command after assignment and validation.

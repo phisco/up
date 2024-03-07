@@ -20,6 +20,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
+	"github.com/upbound/up/internal/upterm"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	cp "github.com/upbound/up-sdk-go/service/controlplanes"
@@ -30,7 +31,6 @@ import (
 	"github.com/upbound/up/internal/controlplane"
 	"github.com/upbound/up/internal/feature"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 var (

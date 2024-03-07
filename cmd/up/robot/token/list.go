@@ -20,10 +20,12 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/google/uuid"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"k8s.io/apimachinery/pkg/util/duration"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
 	"github.com/upbound/up-sdk-go/service/accounts"
 	"github.com/upbound/up-sdk-go/service/common"
@@ -31,7 +33,6 @@ import (
 	"github.com/upbound/up-sdk-go/service/robots"
 
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 var fieldNames = []string{"NAME", "ID", "CREATED"}

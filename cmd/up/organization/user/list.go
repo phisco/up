@@ -20,7 +20,6 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
-
 	"github.com/upbound/up-sdk-go/service/organizations"
 	"github.com/upbound/up/internal/upbound"
 	"github.com/upbound/up/internal/upterm"

@@ -22,10 +22,8 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"golang.org/x/exp/maps"
 	"helm.sh/helm/v3/pkg/chart"
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +36,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/resource"
+
 	"github.com/upbound/up/cmd/up/space/defaults"
 	"github.com/upbound/up/cmd/up/space/prerequisites"
 	"github.com/upbound/up/internal/config"
@@ -47,7 +49,6 @@ import (
 	"github.com/upbound/up/internal/profile"
 	"github.com/upbound/up/internal/resources"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 	"github.com/upbound/up/internal/version"
 )
 

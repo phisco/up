@@ -19,9 +19,11 @@ import (
 	"fmt"
 
 	"github.com/alecthomas/kong"
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"github.com/google/uuid"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
 	"github.com/upbound/up-sdk-go/service/accounts"
 	"github.com/upbound/up-sdk-go/service/common"
@@ -30,7 +32,6 @@ import (
 	"github.com/upbound/up-sdk-go/service/tokens"
 
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 // AfterApply sets default values in command after assignment and validation.

@@ -23,6 +23,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"github.com/willabides/kongplete"
 
 	"github.com/upbound/up/cmd/up/configuration"
@@ -43,7 +44,6 @@ import (
 	"github.com/upbound/up/cmd/up/xpls"
 	"github.com/upbound/up/internal/config"
 	"github.com/upbound/up/internal/feature"
-	"github.com/upbound/up/internal/upterm"
 	"github.com/upbound/up/internal/version"
 
 	// TODO(epk): Remove this once we upgrade kubernetes deps to 1.25

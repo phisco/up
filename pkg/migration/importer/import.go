@@ -23,10 +23,6 @@ import (
 	"strings"
 	"time"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
-	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
-	xpmeta "github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/mholt/archiver/v4"
 	"github.com/pterm/pterm"
 	"github.com/spf13/afero"
@@ -41,10 +37,14 @@ import (
 	"k8s.io/client-go/dynamic"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 
-	"github.com/upbound/up/internal/migration/category"
-	"github.com/upbound/up/internal/migration/crossplane"
-	"github.com/upbound/up/internal/migration/meta/v1alpha1"
-	"github.com/upbound/up/internal/upterm"
+	"github.com/upbound/up/pkg/migration/category"
+	"github.com/upbound/up/pkg/migration/crossplane"
+	"github.com/upbound/up/pkg/migration/meta/v1alpha1"
+
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
+	xpmeta "github.com/crossplane/crossplane-runtime/pkg/meta"
 )
 
 var (
@@ -103,14 +103,7 @@ func NewControlPlaneStateImporter(dynamicClient dynamic.Interface, discoveryClie
 
 // Import imports the control plane state.
 func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // nolint:gocyclo // This is the high level import command, so it's expected to be a bit complex.
-	pterm.EnableStyling()
-	upterm.DefaultObjPrinter.Pretty = true
-
-	pterm.Println("Importing control plane state...")
-
 	// Reading state from the archive
-	unarchiveMsg := "Reading state from the archive... "
-	s, _ := upterm.CheckmarkSuccessSpinner.Start(unarchiveMsg)
 
 	// If preflight checks were already done, which unarchives to get the `export.yaml`, we don't need to do it again.
 	if im.fs == nil {
@@ -119,12 +112,10 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 		im.fs = &afero.Afero{Fs: afero.NewMemMapFs()}
 
 		if err := im.unarchive(ctx, *im.fs); err != nil {
-			s.Fail(unarchiveMsg + "Failed!")
 			return errors.Wrap(err, "cannot unarchive export archive")
 		}
 	}
 
-	s.Success(unarchiveMsg + "Done! 👀")
 	//////////////////////////////////////////
 
 	// Pausing resource importer will import all resources.
@@ -134,44 +125,32 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 	// Import base resources which are defined with the `baseResources` variable.
 	// They could be considered as the custom or native resources that do not depend on any packages (e.g. Managed Resources) or XRDs (e.g. Claims/Composites).
 	// They are imported first to make sure that all the resources that depend on them can be imported at a later stage.
-	importBaseMsg := "Importing base resources... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(importBaseMsg + fmt.Sprintf("0 / %d", len(baseResources)))
 	baseCounts := make(map[string]int, len(baseResources))
-	for i, gr := range baseResources {
+	for _, gr := range baseResources {
 		count, err := r.ImportResources(ctx, gr, false)
 		if err != nil {
-			s.Fail(importBaseMsg + "Failed!")
 			return errors.Wrapf(err, "cannot import %q resources", gr)
 		}
-		s.UpdateText(fmt.Sprintf("(%d / %d) Importing %s...", i, len(baseResources), gr))
 		baseCounts[gr] = count
 	}
 	total := 0
 	for _, count := range baseCounts {
 		total += count
 	}
-	s.Success(importBaseMsg + fmt.Sprintf("%d resources imported! 📥", total))
 	//////////////////////////////////////////
 
 	// Wait for all XRDs and Packages to be ready before importing the resources that depend on them.
 
-	waitXRDsMsg := "Waiting for XRDs... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(waitXRDsMsg)
-	if err := im.waitForConditions(ctx, s, schema.GroupKind{Group: "apiextensions.crossplane.io", Kind: "CompositeResourceDefinition"}, []xpv1.ConditionType{"Established"}); err != nil {
-		s.Fail(waitXRDsMsg + "Failed!")
+	if err := im.waitForConditions(ctx, schema.GroupKind{Group: "apiextensions.crossplane.io", Kind: "CompositeResourceDefinition"}, []xpv1.ConditionType{"Established"}); err != nil {
 		return errors.Wrap(err, "there are unhealthy CompositeResourceDefinitions")
 	}
-	s.Success(waitXRDsMsg + "Established! ⏳")
 
-	waitPkgsMsg := "Waiting for Packages... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(waitPkgsMsg)
 	for _, k := range []schema.GroupKind{
 		{Group: "pkg.crossplane.io", Kind: "Provider"},
 		{Group: "pkg.crossplane.io", Kind: "Function"},
 		{Group: "pkg.crossplane.io", Kind: "Configuration"},
 	} {
-		if err := im.waitForConditions(ctx, s, k, []xpv1.ConditionType{"Installed", "Healthy"}); err != nil {
-			s.Fail(waitPkgsMsg + "Failed!")
+		if err := im.waitForConditions(ctx, k, []xpv1.ConditionType{"Installed", "Healthy"}); err != nil {
 			return errors.Wrapf(err, "there are unhealthy %qs", k.Kind)
 		}
 	}
@@ -185,28 +164,23 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 		{Group: "pkg.crossplane.io", Kind: "FunctionRevision"},
 		{Group: "pkg.crossplane.io", Kind: "ConfigurationRevision"},
 	} {
-		if err := im.waitForConditions(ctx, s, k, []xpv1.ConditionType{"Healthy"}); err != nil {
-			s.Fail(waitPkgsMsg + "Failed!")
+		if err := im.waitForConditions(ctx, k, []xpv1.ConditionType{"Healthy"}); err != nil {
 			return errors.Wrapf(err, "there are unhealthy %qs", k.Kind)
 		}
 	}
 
-	s.Success(waitPkgsMsg + "Installed and Healthy! ⏳")
 	//////////////////////////////////////////
 
 	// Reset the resource mapper to make sure all CRDs introduced by packages or XRDs are available.
 	im.resourceMapper.Reset()
 
 	// Import remaining resources other than the base resources.
-	importRemainingMsg := "Importing remaining resources... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(importRemainingMsg)
 	grs, err := im.fs.ReadDir("/")
 	if err != nil {
-		s.Fail(importRemainingMsg + "Failed!")
 		return errors.Wrap(err, "cannot list group resources")
 	}
 	remainingCounts := make(map[string]int, len(grs))
-	for i, info := range grs {
+	for _, info := range grs {
 		if info.Name() == "export.yaml" {
 			// This is the top level export metadata file, so nothing to import.
 			continue
@@ -225,20 +199,16 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 			return errors.Wrapf(err, "cannot import %q resources", info.Name())
 		}
 		remainingCounts[info.Name()] = count
-		s.UpdateText(fmt.Sprintf("(%d / %d) Importing %s...", i, len(grs), info.Name()))
 	}
 	total = 0
 	for _, count := range remainingCounts {
 		total += count
 	}
 
-	s.Success(importRemainingMsg + fmt.Sprintf("%d resources imported! 📥", total))
 	//////////////////////////////////////////
 
 	// At this stage, all the resources are imported, but Claims/Composites and Managed resources are paused.
 	// In the finalization step, we will unpause Claims and Composites but not Managed resources (i.e. not activate the control plane yet).
-	finalizeMsg := "Finalizing import... "
-	s, _ = upterm.CheckmarkSuccessSpinner.Start(finalizeMsg)
 	cm := category.NewAPICategoryModifier(im.dynamicClient, im.discoveryClient)
 	_, err = cm.ModifyResources(ctx, "composite", func(u *unstructured.Unstructured) error {
 		xpmeta.RemoveAnnotations(u, "crossplane.io/paused")
@@ -255,11 +225,8 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 	if err != nil {
 		return errors.Wrap(err, "cannot unpause claims")
 	}
-	s.Success(finalizeMsg + "Done! 🎉")
 
 	if im.options.UnpauseAfterImport {
-		unpauseMsg := "Unpausing managed resources ... "
-		s, _ := upterm.CheckmarkSuccessSpinner.Start(unpauseMsg)
 		_, err = cm.ModifyResources(ctx, "managed", func(u *unstructured.Unstructured) error {
 			xpmeta.RemoveAnnotations(u, "crossplane.io/paused")
 			return nil
@@ -267,7 +234,6 @@ func (im *ControlPlaneStateImporter) Import(ctx context.Context) error { // noli
 		if err != nil {
 			return errors.Wrap(err, "cannot unpause managed resources")
 		}
-		s.Success(unpauseMsg + "Done! ▶️")
 	}
 	//////////////////////////////////////////
 
@@ -385,7 +351,7 @@ func isBaseResource(gr string) bool {
 	return false
 }
 
-func (im *ControlPlaneStateImporter) waitForConditions(ctx context.Context, sp *pterm.SpinnerPrinter, gk schema.GroupKind, conditions []xpv1.ConditionType) error {
+func (im *ControlPlaneStateImporter) waitForConditions(ctx context.Context, gk schema.GroupKind, conditions []xpv1.ConditionType) error {
 	rm, err := im.resourceMapper.RESTMapping(gk)
 	if err != nil {
 		return errors.Wrapf(err, "cannot get REST mapping for %q", gk)
@@ -400,7 +366,7 @@ func (im *ControlPlaneStateImporter) waitForConditions(ctx context.Context, sp *
 			pterm.Printf("cannot list packages with error: %v\n", err)
 			return
 		}
-		total := len(resourceList.Items)
+		// total := len(resourceList.Items)
 		unmet := 0
 		for _, r := range resourceList.Items {
 			paved := fieldpath.Pave(r.Object)
@@ -418,7 +384,6 @@ func (im *ControlPlaneStateImporter) waitForConditions(ctx context.Context, sp *
 			}
 		}
 		if unmet > 0 {
-			sp.UpdateText(fmt.Sprintf("(%d / %d) Waiting for %s to be %s...", total-unmet, total, rm.Resource.GroupResource().String(), printConditions(conditions)))
 			return
 		}
 

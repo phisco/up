@@ -17,8 +17,9 @@ package importer
 import (
 	"testing"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/google/go-cmp/cmp"
+
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 )
 
 func Test_printConditions(t *testing.T) {

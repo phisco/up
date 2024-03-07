@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/pterm/pterm"
-
 	"github.com/upbound/up-sdk-go/service/organizations"
 	"github.com/upbound/up/internal/input"
 	"github.com/upbound/up/internal/upbound"

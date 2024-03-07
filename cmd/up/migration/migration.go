@@ -16,9 +16,9 @@ package migration
 
 import (
 	"github.com/alecthomas/kong"
+	"github.com/upbound/up/pkg/migration"
 
 	"github.com/upbound/up/internal/kube"
-	"github.com/upbound/up/internal/migration"
 )
 
 // AfterApply constructs and binds Upbound specific context to any subcommands

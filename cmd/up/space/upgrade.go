@@ -22,6 +22,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"helm.sh/helm/v3/pkg/chart"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,7 +36,6 @@ import (
 	"github.com/upbound/up/internal/install/helm"
 	"github.com/upbound/up/internal/kube"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 const (

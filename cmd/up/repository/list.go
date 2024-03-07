@@ -21,6 +21,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	"k8s.io/apimachinery/pkg/util/duration"
 
 	"github.com/upbound/up-sdk-go/service/common"
@@ -28,7 +29,6 @@ import (
 	repos "github.com/upbound/up-sdk-go/service/repositories"
 
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 const (

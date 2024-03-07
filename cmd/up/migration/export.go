@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/pkg/migration"
+	"github.com/upbound/up/pkg/migration/exporter"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
@@ -26,8 +28,6 @@ import (
 	"k8s.io/client-go/restmapper"
 
 	"github.com/upbound/up/internal/input"
-	"github.com/upbound/up/internal/migration"
-	"github.com/upbound/up/internal/migration/exporter"
 )
 
 const secretsWarning = `Warning: A functional Crossplane control plane requires cloud provider credentials,

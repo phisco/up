@@ -21,6 +21,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/pterm/pterm"
+	"github.com/upbound/up/internal/upterm"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -28,7 +29,6 @@ import (
 	"github.com/upbound/up/internal/input"
 	"github.com/upbound/up/internal/install/helm"
 	"github.com/upbound/up/internal/upbound"
-	"github.com/upbound/up/internal/upterm"
 )
 
 const (
