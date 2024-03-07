@@ -15,10 +15,14 @@
 package exporter
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/mholt/archiver/v4"
 	"github.com/pterm/pterm"
 	"github.com/spf13/afero"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -284,31 +288,65 @@ func (e *ControlPlaneStateExporter) customResourceGVR(in apiextensionsv1.CustomR
 }
 
 func (e *ControlPlaneStateExporter) archive(ctx context.Context, fs afero.Afero, dir string) error {
-	files, err := archiver.FilesFromDisk(nil, map[string]string{
-		dir + "/": "",
-	})
-	if err != nil {
-		return err
-	}
-
+	// Create the output file
 	out, err := fs.Create(e.options.OutputArchive)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = out.Close()
-	}()
+	defer out.Close()
 
+	// Apply the appropriate permissions to the output file
 	if err = fs.Chmod(e.options.OutputArchive, 0600); err != nil {
 		return err
 	}
 
-	format := archiver.CompressedArchive{
-		Compression: archiver.Gz{},
-		Archival:    archiver.Tar{},
+	// Create a new gzip writer
+	gw := gzip.NewWriter(out)
+	defer gw.Close()
+
+	// Create a new tar writer
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	// Walk the directory and add each file to the tar archive
+	err = filepath.Walk(dir, func(file string, fi os.FileInfo, err error) error {
+		// Return any errors encountered while walking the directory
+		if err != nil {
+			return err
+		}
+
+		// Open the file
+		f, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		// Create a new tar header
+		header, err := tar.FileInfoHeader(fi, fi.Name())
+		if err != nil {
+			return err
+		}
+
+		// Write the header to the tar archive
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+
+		// Copy the file data to the tar archive
+		if _, err := io.Copy(tw, f); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	// Return any errors encountered while creating the archive
+	if err != nil {
+		return err
 	}
 
-	return format.Archive(ctx, out, files)
+	return nil
 }
 
 func fetchAllCRDs(ctx context.Context, kube apiextensionsclientset.Interface) ([]apiextensionsv1.CustomResourceDefinition, error) {

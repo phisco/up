@@ -15,6 +15,7 @@
 package importer
 
 import (
+	"archive/tar"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -23,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mholt/archiver/v4"
 	"github.com/pterm/pterm"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
@@ -294,52 +294,44 @@ func (im *ControlPlaneStateImporter) unarchive(ctx context.Context, fs afero.Afe
 	if err != nil {
 		return errors.Wrap(err, "cannot open input archive")
 	}
-	defer func() {
-		_ = g.Close()
-	}()
+	defer g.Close()
 
-	ur, err := gzip.NewReader(g)
+	gr, err := gzip.NewReader(g)
 	if err != nil {
-		return errors.Wrap(err, "cannot decompress archive")
+		return errors.Wrap(err, "cannot create gzip reader")
 	}
-	defer func() {
-		_ = ur.Close()
-	}()
+	defer gr.Close()
 
-	format := archiver.Tar{}
+	tr := tar.NewReader(gr)
 
-	handler := func(ctx context.Context, f archiver.File) error {
-		if f.IsDir() {
-			if err = fs.Mkdir(f.NameInArchive, 0700); err != nil {
-				return errors.Wrapf(err, "cannot create directory %q", f.Name())
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return errors.Wrap(err, "cannot read archive")
+		}
+
+		if hdr.FileInfo().IsDir() {
+			if err = fs.Mkdir(hdr.Name, 0700); err != nil {
+				return errors.Wrapf(err, "cannot create directory %q", hdr.Name)
 			}
-			return nil
+			continue
 		}
 
-		nf, err := fs.OpenFile(f.NameInArchive, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		nf, err := fs.OpenFile(hdr.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
-			return errors.Wrapf(err, "cannot create file %q", f.Name())
+			return errors.Wrapf(err, "cannot create file %q", hdr.Name)
 		}
-		defer func() {
-			_ = nf.Close()
-		}()
+		defer nf.Close()
 
-		b, err := f.Open()
-		if err != nil {
-			return errors.Wrapf(err, "cannot open file %q", f.Name())
+		if _, err := io.Copy(nf, tr); err != nil {
+			return errors.Wrapf(err, "cannot write file %q", hdr.Name)
 		}
-		defer func() {
-			_ = b.Close()
-		}()
-		_, err = io.Copy(nf, b)
-		if err != nil {
-			return err
-		}
-
-		return nil
 	}
 
-	return format.Extract(ctx, ur, nil, handler)
+	return nil
 }
 
 func isBaseResource(gr string) bool {
