@@ -18,12 +18,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/crossplane/crossplane-runtime/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
+
+	"github.com/crossplane/crossplane-runtime/pkg/errors"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -101,7 +102,7 @@ func validatorsFromV1Beta1CRD(c *extv1beta1.CustomResourceDefinition, acc map[sc
 	}
 
 	if internal.Spec.Validation != nil {
-		sv, _, err := validation.NewSchemaValidator(internal.Spec.Validation.OpenAPIV3Schema)
+		sv, _, err := newApiExtensionSchemaValidator(internal.Spec.Validation.OpenAPIV3Schema)
 		if err != nil {
 			return err
 		}
@@ -111,7 +112,7 @@ func validatorsFromV1Beta1CRD(c *extv1beta1.CustomResourceDefinition, acc map[sc
 		return nil
 	}
 	for _, v := range internal.Spec.Versions {
-		sv, _, err := validation.NewSchemaValidator(v.Schema.OpenAPIV3Schema)
+		sv, _, err := newApiExtensionSchemaValidator(v.Schema.OpenAPIV3Schema)
 		if err != nil {
 			return err
 		}
@@ -265,6 +266,16 @@ func buildSchema(s runtime.RawExtension) (*extv1.JSONSchemaProps, error) {
 	schema.Properties["status"] = statusProps
 
 	return schema, nil
+}
+
+// newApiExtensionSchemaValidator creates an openapi schema validator for the given JSONSchemaProps validation.
+func newApiExtensionSchemaValidator(schema *apiextensions.JSONSchemaProps) (*validate.SchemaValidator, *spec.Schema, error) { //nolint:unparam
+	// Convert CRD schema to openapi schema
+	openapiSchema := &spec.Schema{}
+	if err := validation.ConvertJSONSchemaPropsWithPostProcess(schema, openapiSchema, validation.StripUnsupportedFormatsPostProcess); err != nil {
+		return nil, nil, err
+	}
+	return validate.NewSchemaValidator(openapiSchema, nil, "", strfmt.Default), openapiSchema, nil
 }
 
 // newSchemaValidator creates an openapi schema validator for the given JSONSchemaProps validation.
