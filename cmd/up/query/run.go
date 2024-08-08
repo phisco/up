@@ -522,7 +522,7 @@ func createQuerySpec(nname types.NamespacedName, gk metav1.GroupKind, categories
 }
 
 func shouldGetNewPrinterForMapping(printer printers.ResourcePrinter, lastMapping, mapping *meta.RESTMapping) bool {
-	return printer == nil || lastMapping == nil || mapping == nil || mapping.Resource != lastMapping.Resource
+	return printer == nil || lastMapping == nil || mapping == nil || mapping.GroupVersionKind != lastMapping.GroupVersionKind
 }
 
 type RESTScopeNameFunc string
